@@ -1,0 +1,269 @@
+node exporters - collector
+
+pushgateway
+
+promQL 
+
+client-libs 
+|
+record rules
+|
+alertmanager
+##########################################################################
+
+Recap 
+-----
+Prometheus - monitoring tool
+	 |
+	 |->monitor - local system(m/c) 
+	 |->monitor - remote system (Linux/mac - node_exporter ; win - wmi_exporter )
+	 |->monitor - cloud instance 
+	 |->monitor - Applications (like DBs ; Application Code ..)
+	 |->monitor - containers 
+
+Data model
+-----------
+ |->Time-series  - value index with timestamp
+ |->metric - information 
+ |-><metricName> { Key = Value ... }  final_Value <TimeStamp>
+		 |----LABEL--------|    y axis       x axis 
+
+Prometheus.yml - Configuration file
+==============
+ do any changes in Prometheus.yml - restart Prometheus service (Prometheus.exe)
+
+To Monitor any specific node(infrastructure/application)
+
+Step 1:  Go to node - on the node 
+			|
+			download the exporters
+Step 2:	unzip exporter file
+|
+Step 3: execute exporter binary(or) exe file - act as a process
+|
+Step 4: curl localhost:<port>/metrics  - Test 
+|
+Step 5: update this node details to Prometheus(Prometheus.yml) then restart Prometheus 
+
+###########################################################################################################
+
+[laptop-prometheus-server:9090] <------------------------>[OL8-oci] - Linux
+ 							  node_exporter
+							  |->CPU,Filesystem,Diskstats,Memory,Loadavg...
+							  
+							   /proc /sysfs  - kernel 
+
+node_ 
+ |
+starts with node_ <== remote node metric details 
+
+remote node - baremetal -> node_hwmon_...
+
+
+#########################################################################################################
+pushgateway
+----------------
+file:pushgateway_example.sh
+-----------------------------
+echo "mytest_metric 3.14" | gzip | curl -H 'Content-Encoding: gzip' --data-binary @- http://127.0.0.1:9091/metrics/job/som
+
+|
+download pushgateway - exporter
+|
+unzip - pushgateway-1.10.0.linux-arm64.tar.gz
+|
+cd pushgateway
+|
+./pushgateway >/dev/null &
+|
+./pushgateway_example.sh
+|
+curl 127.0.0.1:9091/metrics
+...
+mytest_metric   3.14
+...
+------
+ |-->update this pushgateway details to Prometheus server 
+					|
+					Prometheus.yml
+					|
+				- job_name: "oci-OL8-pushgateway"
+    				  scrape_interval: 5s
+    				  static_configs:
+      				    - targets: ["130.61.29.243:9091"]
+					|
+					restart Prometheus 
+--------------------------------------------------------------------------------------------------
+
+promQL
+-------
+ |
+ promQL Data Types
+ --------------------
+  - Instant Vector - single sample at a specific time 
+  - Range Vector - A set of time series with a range of samples over time
+  - scalar - A single numerical value
+  - string - not used 
+
+Types of  Prometheus metrics
+---------------------------------
+ 1. Counter	
+ 2. Gauge
+ 3. Summary
+ 4. Histogram
+
+
+1. Counter - value increases - web requests; task completed ;
+
+2. Gauge - value go up or down - memory usage
+
+3. Summary - total count and sum of observed values //not supports aggregated 
+4. Histogram - Measures distribution events - request/response size - unit - bucket - supports aggregation
+
+
+Prometheus promQL operators 
+-------------------------------
+1. Aggregation operators 
+     sum avg min max  topk  bottom
+     Grouping
+      without
+      by 
+2. Binary operators
+     |->arithmetic 
+     |->comparison 
+
+Aggregation operators
+sum - it adds up all the values in a group and return 
+sum without(fstype,mountpoint)(node_filesystem_size_bytes{device="/dev/sda1"})
+
+sum without(fstype,mountpoint)(node_filesystem_size_bytes)
+------------------------------------------------------------
+ |->return total size of the filesystems of each node
+
+count without(fstype,mountpoint)(node_filesystem_size_bytes)
+ |
+ count the number of time series in a group
+
+avg without(fstype,mountpoint)(node_filesystem_size_bytes)
+ |
+ avg aggregator 
+
+
+---------------------------------------------------------------
+https://promlabs.com/promql-cheat-sheet/
+
+--------------------------------------------------------------
+
+Task
+-----
+create a dashboard - Gauge panel
+
+		     swap    RSS  free
+
+		   - timeseries 
+		     process_cpu_seconds 5mts  <== metric1
+		     use rate()
+		     sum operator - display cpu details without instance
+		   
+		     process_fds_open  
+		     max() - display with instance 
+
+		   --------------------------------------------------------
+
+
+
+############################################################################################################
+
+Recording rules
+---------------
+|
+independent yml file (or) rule file
+format - YAML Format
+
+rule file format
+-----------------
+file: p1.yml
+-------------
+groups:
+ - name: <groupName>
+   rules:
+   - record: <userdefined_record_name>
+     expr:   promQL
+
+groups name rules record expr - predefined yaml keys/tags
+------------------------------
+
+step 1: create a rule file - filename.yml
+|
+step 2: update this rule file to Prometheus ->restart prometheus
+	
+
+-------------------------------------------------------------
+
+file: p1.yml
+-------------
+groups:
+ - name: example
+   rules:
+    - record: rule1-process_cpu_seconds_rate_in_5m
+      expr: sum without(instance)(rate(process_cpu_seconds_total[5m]))
+    - record: rule2-process_open_fd_max
+      expr: max by(instance)(process_open_fds)
+------------------------------------------------------------------
+Client lib - monitoring
+
+p1.py
+start - http server (8000) ---------->localhost:9090
+		|				|-><python-code:8000>
+		|
+		start HTTPserver - 8001
+
+The Client Code - starts up a HTTP server on port 8000 to serve metrics to Prometheus(9090)
+
+#refer: p1.py and p2.py files
+
+####################################################################################################
+
+Webframe work
+----------------
+ |->Collection of software packages
+     
+	Client: html css 
+	Server: perl python ruby cpp
+	DataBase: MySQL oracle	--------- 3306
+	Webserver: Invoke server code  ---- 8080
+    |_________________________________________________|
+		|
+		8000
+		start - http server (8000) ---------->localhost:9090
+		|				    |-><python-code:8000>
+	
+
+download flask-Prometheus file 
+https://github.com/pakarthikstudent/GrafanaPrometheus/blob/main/flask-prometheus.zip
+|
+unzip
+|
+if your os is Linux/mac os => python ->python3
+|
+docker-compose up -d{Enter}
+|
+docker ps
+|
+curl localhost:5000{enter}
+Flask is up & running
+curl localhost:5000/query{Enter}
+curl localhost:5000/sleep{Enter}
+
+open another terminal 
+|
+|->curl localhost:8000{Enter}
+ ->curl localhost:8000/metrics {Enter}
+   flask_...
+   mysql_...
+   ...
+
+|->update this flask code to Prometheus file
+			     localhost:8000
+				...
+-------------------------------------------------------------------------------------------------------
