@@ -1,0 +1,200 @@
+Grafana variables
+Grafana annotations
+Grafana dashboard settings
+Grafana alerts
+|
+Grafana-cli 
+|
+oci exporters ->Grafana ->oci metrics
+--------------
+################################################################################
+
+  bash shell (or) commandline shell 
+
+   myvar=120
+   |
+   echo myvar -> myvar    Vs   echo $myvar ->120
+				    -
+
+   =~ <= Regular expression operator (or) Regx bind operator <or> match operator
+   ---
+   	^pattern => matches pattern line starts with  (ex: ^sales -> sales.... //OK)
+	 pattern$ -> matches pattern line ends with (ex: sales$  -> ....sales//OK)
+
+	 ^pattern$ -->pattern only style  --> sales //OK  sales, //not-matched
+
+
+host_details  [ Query - value ]
+  |
+  |
+ /^$host_details$/ <==
+   ..............
+	|->regx pattern
+
+
+#########################################################################################
+
+Grafana variable
+-----------------
+variable - namespace - holding a value
+|
+Grafana variable supports different types(query,interval,custome,dashboard,datasource..)
+|
+
+Step 1: InfluxDB Shell =>create a database ->insert some fields 
+
+> create database demo2
+> use demo2
+Using database demo2
+>
+> show measurements
+>
+> insert memUsage,host=server1,region=us-east value=98.34
+> insert memUsage,host=server2,region=us-east value=45.22
+> insert memUsage,host=server3,region=us-west value=56.12
+> insert memUsage,host=server1,region=us-west value=78.52
+>
+> select *from memUsage
+
+Step 2: Goto Grafana  -> DataSource Connection ->Add InfluxDB Connection
+							|->http://localhost:8086
+							|->demo2 (dbname) ->save and test
+
+|
+Step 3: Goto Grafana-Dashboard ->create new dashboard ->Select your DataSourceName
+						      ->Select measurement
+						      ->Select value
+
+|
+Step 4:  Save this Dashboard
+|
+Step 5:  Go to dashboard settings ->Variable Tab
+					|
+					Add new variable
+					|		  
+					Name:<userdefined> variable Type ->query 
+					|
+					SHOW TAG VALUES WITH KEY = "host"
+					|
+					See the preview of values (server1 server2 server3)
+
+|
+Step 6: Go to dashboard - we can see the variable - value # there is no changes in panel
+|
+Step 7: Go to panel - edit mode
+			|
+			Query editor 
+			|
+			where  host::tag -> =~ /^$<Variablename>$/
+
+Step 8: Now you can select - specific node 
+								
+#######################################################################################################
+
+SHOW TAG VALUES WITH KEY = "hostname"  WHERE region = '$region'
+					
+SHOW TAG VALUES WITH KEY = "host" 				
+
+
+annotation - adding some text to a datapoint
+----------
+ |->region
+ |->query
+
+#####################################################################################################
+
+Task
+------
+Step 1:  open your influx shell
+	 |
+	 Create a database - demo4
+	 |
+	insert swapUsage,host=host01,region=us-east value=89.34
+	 ... 
+
+	 select *from swapUsage
+
+> create database demo4
+>
+> use demo4
+Using database demo4
+> insert swapUsage,host=host02,region=us-east value=49.34
+>
+> insert swapUsage,host=host03,region=us-east value=76.23
+>
+> insert swapUsage,host=host03,region=us-west value=44.98
+> insert swapUsage,host=host04,region=us-west value=78.12
+>
+> select *from swapUsage
+name: swapUsage
+time                host   region  value
+----                ----   ------  -----
+1731402074229501100 host01 us-east 89.34
+1731402108489069300 host02 us-east 49.34
+1731402123642042800 host03 us-east 76.23
+1731402145655508400 host03 us-west 44.98
+1731402157698221300 host04 us-west 78.12
+
+|
+Step 2: Configure influxDB(demo4) to Grafana - default DataSource
+|
+Step 3: create new dashboard ->timeseries ->select your measurement ->field value
+			     ->Gauge ->last value
+	|
+Step 4: Variable 
+	   -> host	- SHOW TAG VALUES WITH KEY = "host"
+	   -> region	- SHOW TAG VALUES WITH KEY = "region"
+			
+|
+Step 5: update variable value to Query editor
+|
+Step 6: Go Variable -> new variable ->datasource variable ->select all influxDB
+	update DB variable to Query editor
+|
+Step 7: update panel name and description (use variable name)
+|
+Step 8: Create a query annotation (Timeseries panel Only)
+		|->select *from swapUsage where value > Number
+|
+Step 9: create a new row - add timeseries,gauge - row name.
+|
+Step 10: save this dashboard ->export json file.
+
+-------------------------------------------------------------------------
+ 
+OCI metrics
+-----------
+https://grafana.com/grafana/plugins/oci-metrics-datasource/?tab=installation
+
+
+https://github.com/oracle/oci-grafana-metrics/blob/master/docs/linux.md
+
+------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

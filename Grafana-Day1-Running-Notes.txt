@@ -1,0 +1,177 @@
+Good Morning All
+
+Welcome to Grafana and Prometheus Training - DAY1
+           --------------------------------
+This is Palani Karthikeyan (Call me: Karthik) Trainer.
+        --------------------------------------
+We will start session @ 9:30 AM IST
+
+
+Grafana + Prometheus 
+	  (measurements - float)
+
+Grafana + Loki (text - log)
+
+Grafana + tempo (trace)
+
+-------------
+Grafana + random data 
+        + InfluxDB (real data source) - insert query;select;
+		Vs			
+	+ Prometheus (real system metric) - select only
+=========================================================================================
+Grafana supports various types of Data Sources
+	|
+	TSDB - influxdb,prometheus ..
+	RDBMS 
+	cloud - cloud exporters 
+	file - Excel,CSV
+	
+
+Panel (visualization) is editable
+
+
+1. Install Grafana - local m/c (win,linux,macos)
+
+2. Grafana Dashboard - random data(Grafana data)
+
+3. DataSource - Configuration.
+
+
+
+Linux
+|
+sudo yum install -y https://dl.grafana.com/enterprise/release/grafana-enterprise-11.3.0-1.x86_64.rpm
+
+|
+systemctl start grafana-server 
+|
+systemctl status grafana-server
+	  |
+	  Running 
+
+
+Windows
+|
+download grafana-server zip file
+|
+extract a folder
+|
+Go to bin folder
+	|
+	grafana-server <== select and run this file - this file act as .exe (or) service file
+			   (like a deamon)
+
+==================================================================================
+|
+Open a browser => On the address bar => type your IPAddress:3000
+
+	Local m/c -> 127.0.0.1:3000
+
+	Login: admin
+	|
+	password: admin
+
+Dashboard - 1 or more panels(Visualization)
+			|
+			each panel - own set of attributes
+						|
+						property about panel
+--------------------------------------------------------------------------------------------
+
+Task 1:
+--------
+
+Create a new dashboard 
+		|-> create a new panel (timeseries)
+			|
+			|->create a multiple query (A B C D)
+			   - tooltip
+			   - overwrite property attribute
+		|->Save this Dashboard
+
+Task 2:
+---------
+Create a new dashboard
+		|-> Create a Gauge panel
+				|->duplicate 2 panels
+				
+				Title: Swap      Title: RES       Title: SHM
+
+		|-> edit each panel threshold values
+		
+		|-> Create a new row - row name is <meminfo> 
+			|
+			move all the panels into <meminfo>
+		
+		|->Create a 3 different Stat panels
+			|->cpu avg
+			|->cpu idle
+			|->cpu wait
+		|-> Create a new row - row name is <processinfo>
+			|
+			move all the 3 stats panels into <processinfo>
+
+
+--------------------------------------------------------------------------------------------------
+Json
+------
+ 
+ Key: Value
+	|
+	Array <or> list
+	Hash <or> object <or> dict
+
+dict of list
+list of list
+list of dict
+------------//commonly used structure
+
+"mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "value": null,
+            "color": "green"
+          },
+          {
+            "value": 80,
+            "color": "red"
+          }
+        ]
+      }
+    },
+    "overrides": []
+
+
+
+##########################################################################################
+
+
+create database <dbname>;
+
+show databases;
+
+use <dbname>;
+
+insert <measurement> field1=value1,field2=value2
+
+select *from <measurement>;
+
+
+show databases;
+create database demo1;
+use demo1; <== update Grafana connection endpoint
+insert cpuUsage iowait=76.69
+select *from cpuUsage
+
+create database demo2;
+use demo2 <=== update Grafana endpoints
+insert .....
+
+##########################################################################################
+		
+https://programmersought.com/article/8783578763/
+
+##########################################################################################

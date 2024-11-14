@@ -1,0 +1,279 @@
+Prometheus 
+  - TSDB 
+
+
+InfluxDB                         Vs              Prometheus
+ 	                   
+ - create;insert;delete.                          - DSL -> promQL - There is no insert query/update quiery
+
+ - TSDB                                           - TSDB
+
+ - application use case                           - system and service monitoring only
+
+
+
+[Online_Form] --->ServerCode -->API -->[influxDB]
+				          |
+				      Grafana
+
+
+Prometheus
+------------
+ |->Prometheus.io
+ |->Cloud Native Computing Foundation 
+ |->Monitoring Tool
+
+
+Prometheus server  - To monitor mysqlDB
+			
+			download mysqlDB exporter
+			|
+			extract a file
+				  |->binary file <or> exe file 
+			run a file <or> execute a file //act as a process(system)
+			|		
+			|
+	add this MySQL as Prometheus endpoints (update to Prometheus.yml ->restart Prometheus.service/exe)
+
+
+https://github.com/orgs/prometheus/repositories?type=all
+
+
+metrics - information
+
+<metricName> {Key1=value,Key2=Value....Kn=Value}   <Final_float_Value>
+------------ |<---------LABEL----------------->|
+
+<metricName>
+ 
+ex: process_cpu_total
+    node_process_...
+    mysql_process...
+    container_process...
+    aws_...
+    oci_..
+
+
+Grafana + oci_metrics_DataSource	Vs	Prometheus + OCI (~/.oci..) + download oci_promethes exporter
+	  ======================					     update oci endpoint to Prometheus										|
+										connect to Grafana 
+    
+
+#############################################################################################################
+
+1. YAML ( filename.yml <or> filename.yaml)
+	
+    |->Prometheus configuration (Prometheus.yml)
+    |->record rules (filename.yml)
+    |->alert rules (filename.yml) 
+
+INI  (or)         yml
+|                 Key: [ V1,V2,V3...Vn ] # 1 to many
+Key=Value
+Type=Ethernet
+
+
+YAML 
+-----
+ ->file format is Key: Value // format
+
+   Key:<space>Value
+		| ---->Single Value - number str bool(on off yes no true false)
+		| ---->Collection - array ; object/hash/dict
+
+
+  File
+   |-->filename - repo.log ; fileindex - 1234 ; filesize - 5KB ; file_mount: true
+
+
+filename: repo.log
+fileIndex: 1234
+filesize: 5KB
+file_mount: yes
+-----------------------//Single Structure
+
+key: [ ] //array
+
+file_info:<space>[repo.log,1234,5KB,yes]
+  <or>
+file_info:
+-<space>repo.log
+- 1234
+- 5KB
+- yes
+
+Key: {} //dict
+
+file_info: {K1: repo.log,K2: 1234,K3: 5KB,K4: yes}
+ <or>
+file_info:
+<>K1:<>repo.log
+<>K2:<>1234
+<>K3:<>5KB
+<>K4:<>yes
+
+{K1: V1} # 1key ->1value
+
+{K1: [V1,V2,V3]} # MD 1Key ->MultipleValues
+  <or>
+K1:
+- V1
+- V2
+- V3
+
+{K1: [{job_name: node1},{job_name: node2},{job_name: node3},.....]}
+      -----0th-------- | ------1st ------| ------2nd ------|
+
+K1:
+- job_name: node1
+  Key1: value
+- job_name: node2
+  Key1: value
+- job_name: node3
+  Key1: Value
+
+
+2. Linux like os -> own service file 
+
+
+Kernel - File,Process
+
+File - Data - Under the storage device
+====
+Process - Data - Under the CPU
+=======                    ----
+   
+ 1. user process			2.system process
+    |                                       |
+  by user                                  not created by user
+  after login our system                   all the system process(service) start while os loading time
+  open a run a file//process		   |
+					  then we can see login windows(or) terminal
+					   |
+					   input our username and password
+					   |
+					   CLI(shell) vs GUI(Desktop)
+					    |
+					   User IO //user process
+ps
+pts/<port>				    ? 
+
+step 1: /etc/ systemd /system/ filename.service
+
+             [Unit]
+             Description=<own description>
+             [Service]
+             ExecStart=<map your executable binary file>
+	     [Install]
+	     wantedBy=multi-user.target
+	
+         Save and exit
+Step 2:  systemctl daemon-reload  # reload daemon configuration
+
+Step 3:  systemctl enable filename.service # To start this service automatically
+
+Step 4: systemctl start filename.service # start a service
+|
+Step 5: systemctl status filename.service # check the status 
+
+##########################################################################################################
+Prometheus local m/c
+---------------------
+
+https://github.com/prometheus/prometheus/releases/download/v3.0.0-rc.1/prometheus-3.0.0-rc.1.linux-amd64.tar.gz
+
+
+
+wget https://github.com/prometheus/prometheus/releases/download/v3.0.0-rc.1/prometheus-3.0.0-rc.1.linux-amd64.tar.gz
+
+Regx
+-----
+pattern - text ; char; digits;specialchars;space
+
+^pattern  - line starts with pattern  ^http  => http....//OK ; www.http//not matched
+---------                             --------
+
+pattern$  - line ends with pattern   org$  -> <anyText>org//OK  ftp.abc.org //OK  ftp.abc.org,//Notmatched
+
+^pattern$ - pattern only
+
+[] - singleChar  
+
+[aA]run 
+--------->arun Arun //OK
+
+[a-z]
+[A-Z]
+[a-zA-Z]
+[0-9]
+[a-zA-Z0-9]
+
+^[a-zA-Z0-9] - line starts with any alpha numeric 
+[0-9]$  - line ends with any digits
+
+code =~ [34][0-9][0-9]
+	 3<D><D>
+	 4<D><D>
+
+.* ->list of all
+
+pattern1|pattern2 - any one pattern is matched - OK - like or operator
+
+(pattern1)(pattern2) - both pattern should match - same order - like and operator
+
+{} - range 
+<pattern>{n} - pattern repeated n times
+
+ab{3}c   ==>    abbbc //OK ;  abc abbc abbbbc //not-matched 
+
+^[a-zA-Z][0-9][0-9][0-9][0-9][0-9][a-z][a-z]$ ---> ^[a-zA-Z][0-9]{5}[a-z]{2}$
+
+ab{3,5}c ==> abbbc abbbbc abbbbbc //OK ; abbc abc abbbbbbc //Notmatched
+
+
+
+###############################################################################################
+
+Node_exporter Activity
+------------------------
+remote node: Linux 
+
+Step 1: prepare - network setup between Prometheus server(local m/c) and remote_linux_mc 
+		
+Step 2: Go To remote_linux_mc  
+	|
+	| -> 1) download node_exporter from Prometheus portal 
+	
+wget 
+https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz
+
+	 -> 2) tar -xvf node_exporter-1.8.2.linux-amd64.tar.gz
+	 |
+	 -> 3) cd node_exporter-1.8.2.linux-amd64
+	 |
+	 -> 4) ./node_exporter 
+		 (or)
+		./node_exporter >/dev/null &
+
+	-> 5) curl 127.0.0.1:9100 
+		
+        -> 6) curl 127.0.0.1:9100/metrics 
+		# we can see node_exporter metrics 
+	-> 7) systemctl stop firewalld 
+
+Step 3: open Prometheus.yml file ( Prometheus server - localhost)
+		|
+		add new endpoints(remoteNode)
+		- job_name: "remotenode1"
+    		  static_configs:
+      		    - targets: ["<remoteLinuxmc_IP>:9100"]
+
+	Save and exit
+Step 4: restart a Prometheus server 
+|
+Step 5: Prometheus ->status ->targethelth (endpoints)
+---------------------------------------------------------------------------------------------------------
+
+
+
+
