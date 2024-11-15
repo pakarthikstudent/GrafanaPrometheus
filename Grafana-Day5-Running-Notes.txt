@@ -1,0 +1,318 @@
+Prometheus Alert manager 
+-------------------------
+1. download alert manager 
+2. create alert manager yaml (file:alertmanager.yml) 
+3. configure channel 
+4. create alertmanager service 
+5. update this alert manager port details to Prometheus - then restart Prometheus 
+|
+6. like a record rule -> create alert rule
+			 -------------------
+			  ->condition based 
+		      -> update alert rule inside the Prometheus (Prometheus.yml)
+|
+7. configure channel (alertmanager.yml - do any changes in alertmanager.yml - restart alertmanager)
+
+groups:
+- name: example
+  rules:
+   - record: job:up:avg
+     expr:  avg without(instance)(up{job="node1"})
+   - alert: InstanceDown
+     expr:  avg without(instance)(up{job="node1"}) < 0.9
+---------------------------------------------------------------------------------------------------
+
+Alert rule template
+---------------------
+
+- alert: <user_defined_alertName>
+  expr:  promQL - conditionbased 
+  for: <duration>
+  |
+ the for field - given alert must be returned for at least this long before it starts firing.
+ (until the for condition is met,an alert is considered to be pending)
+  labels:
+  <><>severity: <userdefined_severity> (ex: ticket,critical,warining...)
+  |
+  space
+  annotations:
+  <><>summary: 'user defined summary'
+
+example:-
+----------
+file: p1.yml
+-------------groups:
+- name: OL7node
+  rules:
+   - alert: cpuIdleUsage
+     expr: (avg by(instance)(rate(node_cpu_seconds_total{job = "node-OL7",mode = "idle"}[5m])) * 100 ) >35
+     for: 1m
+     labels:
+       severity: critical
+     annotations:
+       description: '{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes.'
+       summary: 'Instance {{ $labels.instance }} down'
+       dashboard: http://localhost:3000/dashboard/
+
+save this file and update to Prometheus(Prometheus.yml)
+|
+########################################################################################
+
+Slack configuration
+-------------------
+ 
+
+Step 1: https://company.slack.com/apps <==
+				  |
+				[manage] <== Goto manage (Step 2)
+				  |
+				[customeintegration]<== (Step 3)
+					|
+					[incoming webhooks] <== Step 4
+					 |
+				[add a configuration]<== Step 5
+					 |
+					[choose channel] <=== Step 6
+					
+				webhook URL: https://hooks.slack.... <== Step 7
+					    -----------------------
+						|->Copy this url and paste it to alertmanager.yml file
+										 |
+								api_url: <paste the URL>
+								|
+							restart alertmanager.
+--------------------------------------------------------------------------------------------
+
+receivers:
+  email_configs:
+  - to: ''
+  slack_configs:
+  - api_url: https://hooks.slack.com/services/XXXXXX/XXXXXX/XXXXXX <== paste webhook url
+    channel: '#prometheus-course'
+    send_resolved: true
+---------------------------------------------------------------------------------------------
+
+Notification Pipeline
+---------------------
+[]Inhibition   [ ] Silencing  []Routing  []Grouping [ ]Throttling and repetition 
+
+---------------------------------------------------------------------------------------------
+
+cAdvisor 
+----------
+ - monitor containers 
+
+  cgroup - control group - kernel subsystem
+
+
+		[App1] [App2 ] .. [Appn] <== user space
+		----------------------------
+			Kernel			
+		----------------------------
+		CPU RAM  HD NIC
+
+			Vs
+		
+			DB - shm;sem
+		[App1] [App2 ] .. [Appn] <== user space
+		----------------------------
+		[c1] [c2] [c3] ..[cn] <== kernel subsystem
+			Kernel			
+		----------------------------
+		CPU RAM  HD NIC
+
+
+ cgroup
+ -------
+  |-> .service - system process
+  |-> .slice   - blueprint of process
+        -.slice - root slice
+          system.slice - all system services
+          user.slice   - all user session
+          machine.slice - VM
+
+	  user.slice
+          |
+          |__user-1000(userID).slice
+               |__ session1.scope
+                    |--<PID> <process> [command]
+			..
+  |-> .target  - runlevel
+	...
+	...
+       ------//unit files
+
+
+ core cgroup components
+----------------------------
+ |-> blkio - IO access to and from block devices
+ |-> cpu  
+ |-> cpuacct 
+ |-> devices 
+ |-> memory
+ |-> net_cls
+ 
+
+   system slice - system process - ?
+   user slice 
+		userA    userB
+		|	  |
+		1001	  1002
+		|	  |
+		...	  ..
+	
+To install docker
+===================
+#root@example:~/containers# cat install-docker
+
+vi install-docker {Enter}
+curl -fsSL get.docker.com -o get-docker.sh
+sh get-docker.sh
+sudo curl -L https://github.com/docker/compose/releases/download/1.21.2/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+
+:wq
+chmod a+x install-docker
+./install-docker
+--------------------------------------------------------------------------------------
+|
+cAdvisor 
+-----------------------------------------------------
+vi p1{Enter}
+ docker run \
+  --volume=/:/rootfs:ro \
+  --volume=/var/run:/var/run:rw \
+  --volume=/sys:/sys:ro \
+  --volume=/var/lib/docker/:/var/lib/docker:ro \
+  --volume=/dev/disk/:/dev/disk:ro \
+  --publish=8080:8080 \
+  --detach=true \
+  --name=cadvisor \
+  google/cadvisor:v0.28.3
+
+:wq 
+chmod a+x p1
+./p1
+
+curl 127.0.0.1:8080/metrics 
+-----------------------------------------------
+
+---------------------------
+ |
+LXC
+ |
+[user-1000] - user.slice.1000
+	|
+	process  - R+
+
+########################################################################################################
+Service Discovery
+------------------
+
+						OL8 - Prometheus running - we can monitor remote node(OL7)
++-----------------------+			+----------------------------+
+| OL7 - 192.168.1.5	  ===================>  |
+|	node_exporter				|  - job_name: OL7
+|	|->running - 9100			|    static_configs:
+|                                               |       - targets: ["192.168.1.5:9100"]
++-----------------------+			|
+						+-----------------------------+
+
+ |
+ |
+shutdown 
+ |
+power on PC					 OL8 - OL7 endpoint is down - we can't monitor
+  |					        +-----------------------------+
+ OL7 - 192.168.1.77				|  - job_name: OL7
+       node_exporter - running:9100		     static_configs:		
+						       - targets: ["192.168.1.5:9100"]
+								    <--------->
+									?
+Service	Discovery (SD)							// we can switch to SD
+......................
+ |->mechanism by which services dynamically identify and connect to network
+				--------------------------------------------
+ |->automatically detect and configure new service  without restart Prometheus
+ |->Handle large number of services and instances 
+			//scaling up and down
+
+
+ |->metadata
+    ........//convert all the target labels
+    special variable 
+    .................
+	__<variablename>__
+
+
+ |->FileService Discovery  file-sd
+	|
+	|->json file <== via API calls
+
+ | Prometheus.yml
+    |
+ scrape_configs:
+  - job_name: "local_windows"
+    static_configs:  <----------------------------(A)
+      - targets: ["localhost:9090"]
+    						  Vs
+ -  job_name: "file-SD"
+    file_sd_configs: <----------------------------(B)
+      - files:
+         - 'p1.json'
+	 - 'p2.json'
+
+####################################################################################################
+Service Discovery
+-------------------
+
+1 ) Go to Prometheus Folder 
+
+2)  Create a new python file - file extension must be .py 
+	    
+ file:p1.py
+--------------
+import json
+
+L=[{"targets": ["<remote_node_IP>":9100"],"labels":{"job":"node1"}}]
+wobj = open("p1.json","w")
+json.dump(L,wobj)
+wobj.close()
+
+------------------
+
+3) run a python code =>  Linux/mac => python3 p1.py ; win ->python p1.py
+
+4) dir / ls - json file is created
+ 
+  p1.json <== don't edit this file - do read and close it.
+
+5) open Prometheus.yml file
+   |
+scrape_configs:
+  -  job_name: "file-SD"
+     file_sd_configs:  
+      - files:
+         - 'p1.json'
+
+  save and close it
+
+ 6) Go to Prometheus targets => refresh a page 
+			|
+			ServiceDiscovery
+-------------------------------------------------------------------------------------
+
+Consul 
+- 
+
+
+ 
+
+
+
+
+
+
+
+
+
